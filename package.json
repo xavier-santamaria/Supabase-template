@@ -1,0 +1,30 @@
+{
+  "name": "supabase-test",
+  "version": "1.0.0",
+  "description": "Backend con Supabase, Prisma y Edge Functions",
+  "main": "index.js",
+  "scripts": {
+    "dev": "supabase start",
+    "test": "jest",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "generate": "prisma generate",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@prisma/client": "^5.10.0",
+    "@supabase/supabase-js": "^2.39.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "jest": "^29.0.0",
+    "prettier": "^3.0.0",
+    "prisma": "^5.10.0",
+    "supabase": "^1.142.0",
+    "typescript": "^5.0.0"
+  }
+}
