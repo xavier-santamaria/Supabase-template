@@ -1,4 +1,5 @@
-const { relative } = require('path');
+const { relative, dirname } = require('path');
+const { execSync } = require('child_process');
 
 const getFunctionDir = (file) => {
   const rel = relative(process.cwd(), file);
@@ -8,16 +9,11 @@ const getFunctionDir = (file) => {
 
 module.exports = {
   // Archivos de Deno (Supabase Edge Functions)
-  'supabase/functions/[!_]**/*.ts': (files) => {
-    const functionDirs = new Set(files.map(getFunctionDir).filter(Boolean));
-
-    return [
-      'prettier --write ' + files.join(' '),
-      ...Array.from(functionDirs).map((dir) => {
-        return `cd supabase/functions/${dir} && deno check index.ts`;
-      }),
-    ];
-  },
+  'supabase/functions/**/*.ts': [
+    'prettier --write',
+    'deno check supabase/functions/**/*.ts',
+    'deno lint supabase/functions/**/*.ts',
+  ],
   // Otros archivos
   '*.{json,yaml,yml,md}': ['prettier --write'],
 };
