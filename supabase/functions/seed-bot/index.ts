@@ -3,78 +3,79 @@
 // This enables autocomplete, go to definition, etc.
 
 // Setup type definitions for built-in Supabase Runtime APIs
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "@supabase/supabase-js";
-import { generateBotKey } from "@/utils/apikey";
-import { z } from "zod";
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
+import { createClient } from '@supabase/supabase-js'
+import { generateBotKey } from '@/utils/apikey'
+import { z } from 'zod'
 
 // Define el schema de validación
 const CreateBotSchema = z.object({
-  name: z.string()
-    .min(3, "Name must be at least 3 characters long")
-    .max(50, "Name must be less than 50 characters")
+  name: z
+    .string()
+    .min(3, 'Name must be at least 3 characters long')
+    .max(50, 'Name must be less than 50 characters')
     .regex(
       /^[a-zA-Z0-9-_]+$/,
-      "Name can only contain letters, numbers, hyphens and underscores",
+      'Name can only contain letters, numbers, hyphens and underscores',
     ),
-});
+})
 
 // Type inference from schema
-type CreateBotRequest = z.infer<typeof CreateBotSchema>;
+type CreateBotRequest = z.infer<typeof CreateBotSchema>
 
 interface CreateBotResponse {
-  message: string;
+  message: string
   bot: {
-    id: string;
-    name: string;
-    apiKey: string;
-    createdAt: string;
-    updatedAt: string;
-  };
+    id: string
+    name: string
+    apiKey: string
+    createdAt: string
+    updatedAt: string
+  }
 }
 
 interface ErrorResponse {
-  error: string;
-  errors?: Record<string, string[]>;
+  error: string
+  errors?: Record<string, string[]>
 }
 
-const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
 
-console.log({ supabaseUrl, supabaseAnonKey });
+console.log({ supabaseUrl, supabaseAnonKey })
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 Deno.serve(async (req: Request): Promise<Response> => {
   try {
-    const body = await req.json();
+    const body = await req.json()
 
     // Validar el request con Zod
-    const result = CreateBotSchema.safeParse(body);
+    const result = CreateBotSchema.safeParse(body)
 
     if (!result.success) {
       return new Response(
         JSON.stringify({
-          error: "Validation failed",
+          error: 'Validation failed',
           errors: result.error.flatten().fieldErrors,
         } as ErrorResponse),
         {
           status: 400,
-          headers: { "Content-Type": "application/json" },
+          headers: { 'Content-Type': 'application/json' },
         },
-      );
+      )
     }
 
-    const { name } = result.data;
+    const { name } = result.data
 
-    console.log(result);
+    console.log(result)
 
     // Generate a unique API key for the bot
-    const apiKey = generateBotKey();
+    const apiKey = generateBotKey()
 
     // Insert the bot into the database
     const { data: bot, error } = await supabase
-      .from("Bot")
+      .from('Bot')
       .insert([
         {
           name,
@@ -84,30 +85,30 @@ Deno.serve(async (req: Request): Promise<Response> => {
         },
       ])
       .select()
-      .single();
+      .single()
 
-    if (error && Object.keys(error).length !== 0) throw error;
+    if (error && Object.keys(error).length !== 0) throw error
 
     return new Response(
       JSON.stringify({
-        message: "Bot created successfully",
+        message: 'Bot created successfully',
         bot,
       } as CreateBotResponse),
-      { headers: { "Content-Type": "application/json" } },
-    );
+      { headers: { 'Content-Type': 'application/json' } },
+    )
   } catch (error: unknown) {
-    console.error("Error creating bot:", error);
+    console.error('Error creating bot:', error)
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       } as ErrorResponse),
       {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       },
-    );
+    )
   }
-});
+})
 
 /* To invoke locally:
 
