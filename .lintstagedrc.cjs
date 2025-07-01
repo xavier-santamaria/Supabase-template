@@ -1,19 +1,38 @@
 const { relative, dirname } = require('path');
-const { execSync } = require('child_process');
+const { readdirSync, existsSync } = require('fs');
+const { join } = require('path');
 
-const getFunctionDir = (file) => {
-  const rel = relative(process.cwd(), file);
-  const match = rel.match(/^supabase\/functions\/([^/_][^/]+)/);
-  return match ? match[1] : null;
+const FUNCTIONS_DIR = 'supabase/functions';
+
+// Encuentra todas las carpetas que tienen deno.json
+const getFunctionDirs = () => {
+  return readdirSync(FUNCTIONS_DIR, { withFileTypes: true })
+    .filter(
+      (dirent) =>
+        dirent.isDirectory() &&
+        !dirent.name.startsWith('_') &&
+        existsSync(join(FUNCTIONS_DIR, dirent.name, 'deno.json')),
+    )
+    .map((dirent) => dirent.name);
 };
 
 module.exports = {
-  // Archivos de Deno (Supabase Edge Functions)
-  'supabase/functions/**/*.ts': [
-    'prettier --write',
-    'deno check supabase/functions/**/*.ts',
-    'deno lint supabase/functions/**/*.ts',
-  ],
-  // Otros archivos
+  'supabase/functions/**/*.ts': (files) => {
+    const commands = [];
+
+    // Prettier para todos los archivos staged
+    commands.push(`prettier --write ${files.join(' ')}`);
+
+    // Check y lint para cada función que tenga deno.json
+    const functionDirs = getFunctionDirs();
+    for (const functionName of functionDirs) {
+      const functionDir = `${FUNCTIONS_DIR}/${functionName}`;
+      commands.push(
+        `sh -c "cd ${functionDir} && deno check *.ts && deno lint *.ts"`,
+      );
+    }
+
+    return commands;
+  },
   '*.{json,yaml,yml,md}': ['prettier --write'],
 };
