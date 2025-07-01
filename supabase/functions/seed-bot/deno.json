@@ -1,0 +1,9 @@
+{
+  "imports": {
+    "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.50.1",
+    "@/utils/apikey": "../_shared/utils/apikey.ts",
+    "zod": "npm:zod@^3.25.67",
+    "date-fns": "npm:date-fns",
+    "stripe": "jsr:@stripe/stripe-js@^2.0.0"
+  }
+}

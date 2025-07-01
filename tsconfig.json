@@ -1,19 +1,20 @@
 {
   "compilerOptions": {
-    "target": "es2020",
-    "module": "commonjs",
-    "lib": ["es2020"],
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
+    "target": "esnext", // Usa la versión más moderna de JS, compatible con Deno
+    "module": "esnext", // Usa módulos ES (import/export), no CommonJS
+    "lib": ["esnext", "dom"], // Incluye librerías modernas + APIs web (fetch, etc.)
+    "strict": true, // Activa todas las comprobaciones estrictas
+    "esModuleInterop": true, // Facilita importaciones comunes de módulos
+    "skipLibCheck": true, // Salta chequeo de tipos en libs externas para rapidez
     "forceConsistentCasingInFileNames": true,
-    "outDir": "dist",
-    "rootDir": "src",
-    "baseUrl": ".",
+    "rootDir": "src", // Ajusta según dónde tengas tus fuentes
+    "baseUrl": ".", // Para resolver imports relativos base
     "paths": {
-      "@/*": ["src/*"]
-    }
+      "@/*": ["src/*"] // Alias para imports con @
+    },
+    "types": ["@supabase/functions-js"], // Importa tipos para supabase functions
+    "allowJs": false // Solo TS, evita JS si quieres chequeo estricto
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*"], // Solo tus fuentes TS
+  "exclude": ["node_modules", "dist"] // Ignora estas carpetas
 }

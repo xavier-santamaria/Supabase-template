@@ -1,93 +1,114 @@
-# Supabase Backend Project
+# Set up
 
-Este proyecto implementa un backend utilizando Supabase con las siguientes características:
+## Requisitos
 
-## Características
+Install extension: Deno
 
-- Gestión de base de datos con Prisma
-- Edge Functions con entornos de staging y producción
-- Cron jobs gestionados desde código
-- Sistema de storage
-- CI/CD con GitHub Actions
+Intalar Deno: https://docs.deno.com/runtime/
 
-## Estructura del Proyecto
+Mas informacion:
+Guia para deno: https://docs.deno.com/runtime/getting_started/setup_your_environment/
 
-```
-.
-├── prisma/               # Esquemas y migraciones de base de datos
-├── supabase/
-│   ├── functions/       # Edge functions
-│   ├── migrations/      # Migraciones de Supabase
-│   └── config.toml      # Configuración de Supabase
-├── .github/
-│   └── workflows/       # GitHub Actions workflows
-└── scripts/             # Scripts de utilidad
-```
+## Empezzar supabase
 
-## Entornos
+supabase init
 
-El proyecto mantiene dos entornos:
+## Poner Deno en el projcto
 
-- Staging (stg)
-- Producción (pro)
+Crlt + p para abrar el menu de busqueda, y escribit: >Deno
 
-Cada entorno tiene su propia base de datos y configuración.
+Selecionar ">Deno: initialize Workspace Configuration"
 
-## Setup Inicial
+# BD
 
-1. Instalar dependencias:
+## Ejecutar en local
 
-```bash
-npm install
+```zsh
+npx supabase start
 ```
 
-2. Configurar variables de entorno:
+Esto levantara un Bd local, accesible en: http://localhost:54323/
 
-```bash
-cp .env.example .env
+Las endge function locales interactuaran con esta
+
+## Migration
+
+```zsh
+npx supabase migration new <nombre-migration>
 ```
 
-3. Inicializar Supabase:
+luego hay que rellenar el fichero con el codgio, supabase no tiene funcion para crear un BD a partid de un fichero de confirguracion
 
-```bash
-npx supabase init
+# Crear function
+
+supabase functions new <nombre funcion>
+
+## Correr un fucnion para test
+
+supabase functions serve <nombre funcion>
+
+**Para ejecutar functions sin autentificacion**
+
+supabase functions serve <nombre funcion> --no-verify-jwt
+
+## Deploy de una funcion por cli
+
+supabase functions deploy <nombre funcion>
+
+esto te ara elegir una de los projectos que se tiene creado y en la consola aparecera una linea como "You can inspect your deployment in the Dashboard: https://supabase.com/dashboard/project/fltwndhckcsvpdrztqog/functions" en esta podras ver la api y un ejemplo de ejecucion
+
+Una vez hecho el deploy necesitara el apy key de anon para ser ejecutada
+
+# Imports
+
+hay varias formas de usar los imports
+
+Hay que matizar que Deno no es compatible con los improts de Node.js, es decir solo se puedenimprtar librerias compatibles con Deno
+
+## Raw
+
+Simplemente poner la ruta de lo que se quiera importar, ej:
+
+import { createClient } from "jsr:@supabase/supabase-js@^2.50.1";
+import { generateBotKey } from "../\_shared/utils/apikey.ts";
+
+## deno.json
+
+Se puede usar el fichero deno.json de una function para simplicar las rutas, por ejemplo
+
+```json
+{
+  "imports": {
+    "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.50.1",
+    "@/utils/apikey": "../_shared/utils/apikey.ts"
+  }
+}
 ```
 
-4. Configurar Prisma:
+de esta forma en el fichero de la function podemos haccer:
 
-```bash
-npx prisma init
+```ts
+import { createClient } from '@supabase/supabase-js';
+import { generateBotKey } from '@/utils/apikey';
 ```
 
-## Desarrollo
+Hay que matizar que las keys del json es lo que se usara para importar. El deno.json solo es util para esa fucion
 
-### Base de datos
+Tambien se puede importar haciendo algo similar al un npm i, ej:
 
-Las migraciones se gestionan con Prisma:
-
-```bash
-npx prisma migrate dev
+```
+cd supabase/functions/<nombre function>
+deno add jsr:@supabase/supabase-js
 ```
 
-### Edge Functions
+## import_map.json
 
-Las Edge Functions se encuentran en `supabase/functions/`. Para desarrollo local:
+Parecido al deno.json pero podria servir para todas las funcionts (no he sido capaz de configurarlo)
 
-```bash
-npx supabase functions serve
-```
+# Variables de entorno
 
-### Cron Jobs
+en local mirara el .env en la raiz del projecto, en deploy se tendra que ir al projecte > Edge Functions > Secrets
 
-Los cron jobs se configuran en `supabase/config.toml` y se pueden probar localmente.
+# Crons
 
-## Despliegue
-
-El despliegue se realiza automáticamente mediante GitHub Actions:
-
-- Push a `main` -> deploy a producción
-- Push a `develop` -> deploy a staging
-
-## Storage
-
-La gestión de archivos se realiza a través de Supabase Storage. Los buckets y políticas se configuran en `supabase/storage.sql`.
+Muy facil de usar: https://supabase.com/blog/supabase-cron
