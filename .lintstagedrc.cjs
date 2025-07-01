@@ -16,7 +16,8 @@ const getFunctionDirs = () => {
 };
 
 module.exports = {
-  "supabase/functions/**/*.ts": files => {
+  // Supabase Edge Functions (Deno)
+  "supabase/functions/**/*.{ts,tsx}": files => {
     const commands = [];
 
     // Prettier for all staged files
@@ -33,5 +34,9 @@ module.exports = {
 
     return commands;
   },
+
+  // Regular TypeScript files (outside supabase)
+  "!(supabase)/**/*.{ts,tsx}": ["eslint --fix", "tsc --noEmit"],
+  // Other files
   "*.{json,yaml,yml,md}": ["prettier --write"],
 };
