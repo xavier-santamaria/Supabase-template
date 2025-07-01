@@ -1,114 +1,293 @@
-# Set up
+# Supabase Edge Functions
 
-## Requisitos
+## Table of Contents
 
-Install extension: Deno
+1. [Prerequisites](#prerequisites)
+2. [Editor Configuration](#editor-configuration)
+3. [Initial Setup](#initial-setup)
+4. [Local Development](#local-development)
+   - [Start the local environment](#start-the-local-environment)
+   - [Create a new Edge Function](#create-a-new-edge-function)
+   - [Run Function Locally](#run-function-locally)
+5. [Authentication and Security](#authentication-and-security)
+   - [API Keys](#api-keys)
+   - [Environment Variables](#environment-variables)
+6. [Deploy to Supabase Cloud](#deploy-to-supabase-cloud)
+7. [Database and Prisma](#database-and-prisma)
+   - [Create Migration](#create-migration)
+8. [Edge Function Imports](#edge-function-imports)
+   - [Using deno.json (Recommended)](#using-denojson-recommended)
+   - [Raw Imports](#raw-imports-not-recommended)
+   - [Import with deno add](#import-with-deno-add)
+   - [Import Best Practices](#import-best-practices)
+9. [Additional Resources](#additional-resources)
 
-Intalar Deno: https://docs.deno.com/runtime/
+## Prerequisites
 
-Mas informacion:
-Guia para deno: https://docs.deno.com/runtime/getting_started/setup_your_environment/
+This project requires installing both Deno as a plugin and on your computer:
 
-## Empezzar supabase
+- VSCode Plugin:
+  https://marketplace.visualstudio.com/items?itemName=denoland.vscode-deno
+- Install Deno: https://docs.deno.com/runtime/
+- Supabase CLI: https://supabase.com/docs/guides/cli
 
-supabase init
+## Editor Configuration
 
-## Poner Deno en el projcto
+This project already includes the VSCode configuration (`.vscode`), but if
+you're using another editor whose configuration isn't compatible, check this
+guide to configure it:
+https://docs.deno.com/runtime/getting_started/setup_your_environment/
 
-Crlt + p para abrar el menu de busqueda, y escribit: >Deno
+If you need to configure a project with these characteristics in VSCode that
+doesn't have the .vscode created, you should do the following:
 
-Selecionar ">Deno: initialize Workspace Configuration"
+Ctrl + p to open the search menu, and type: >Deno: initialize Workspace
+Configuration
 
-# BD
+## Initial Setup
 
-## Ejecutar en local
+This project is already prepared for operation, therefore the following command
+is sufficient:
 
-```zsh
-npx supabase start
+```bash
+cp .env.example .env
+npm install
+npx prisma migrate dev
 ```
 
-Esto levantara un Bd local, accesible en: http://localhost:54323/
+If there's a seeder:
 
-Las endge function locales interactuaran con esta
-
-## Migration
-
-```zsh
-npx supabase migration new <nombre-migration>
+```bash
+npx prisma db seed
 ```
 
-luego hay que rellenar el fichero con el codgio, supabase no tiene funcion para crear un BD a partid de un fichero de confirguracion
+> If you need to initialize supabase from scratch in a project:
+>
+> ```bash
+> supabase init
+> ```
+>
+> But in this case it's already initialized, so it's not necessary
 
-# Crear function
+## Local Development
 
-supabase functions new <nombre funcion>
+### Start the local Supabase environment
 
-## Correr un fucnion para test
+```bash
+supabase start
+```
 
-supabase functions serve <nombre funcion>
+This will start a complete local Supabase environment with:
 
-**Para ejecutar functions sin autentificacion**
+- REST and GraphQL APIs
+- **Admin Console (Studio)**
+- Storage
+- Websockets
+- **PostgreSQL database**
+- Authentication service
+- ...
 
-supabase functions serve <nombre funcion> --no-verify-jwt
+When running the command, it will show you the URLs to access each service.
 
-## Deploy de una funcion por cli
+### Create a new Edge Function
 
-supabase functions deploy <nombre funcion>
+```bash
+supabase functions new <function-name>
+```
 
-esto te ara elegir una de los projectos que se tiene creado y en la consola aparecera una linea como "You can inspect your deployment in the Dashboard: https://supabase.com/dashboard/project/fltwndhckcsvpdrztqog/functions" en esta podras ver la api y un ejemplo de ejecucion
+This will create a new folder in `supabase/functions/<function-name>` with a
+basic `index.ts` file.
 
-Una vez hecho el deploy necesitara el apy key de anon para ser ejecutada
+### Run Function Locally
 
-# Imports
+```bash
+supabase functions serve <function-name>
+```
 
-hay varias formas de usar los imports
+Important flags:
 
-Hay que matizar que Deno no es compatible con los improts de Node.js, es decir solo se puedenimprtar librerias compatibles con Deno
+- `--no-verify-jwt`: Disables JWT verification in local development. **Very
+  useful** for initial testing without authentication.
+- `--env-file ./env.local`: (Optional) If you need to specify a different .env
+  file
 
-## Raw
+Then you can execute it locally:
 
-Simplemente poner la ruta de lo que se quiera importar, ej:
+```bash
+curl -i --location --request POST 'http://localhost:54321/functions/v1/<function-name>' \
+  --header 'Content-Type: application/json' \
+  --data '{"name": "Functions"}'
+```
 
-import { createClient } from "jsr:@supabase/supabase-js@^2.50.1";
-import { generateBotKey } from "../\_shared/utils/apikey.ts";
+## Authentication and Security
 
-## deno.json
+### API Keys
 
-Se puede usar el fichero deno.json de una function para simplicar las rutas, por ejemplo
+By default, Supabase authenticates all requests with an API key. To find it:
+
+1. Open the Supabase console
+2. Go to Project Settings > API Keys
+3. Use the "anon public" key for client requests
+4. Use the "service_role" key for administrative operations (never expose this
+   key!)
+
+### Environment Variables
+
+Sensitive variables should be stored as secrets:
+
+- In local development: Use `.env` file
+- In production: Configure in Dashboard > Edge Functions > Secrets
+
+## Deploy to Supabase Cloud
+
+1. Deploy the function:
+
+```bash
+supabase functions deploy <function-name>
+```
+
+2. After deployment:
+
+- The function will be available at:
+  https://<project-id>.supabase.co/functions/v1/<function-name>
+- You'll need the anon API key for calls
+- You can view the function in the Dashboard:
+  https://supabase.com/dashboard/project/<project-id>/functions
+
+⚠️ **Important**: In Supabase's free plan, the database is suspended after 1
+week of inactivity. To prevent suspension:
+
+- Perform some database activity at least once every 7 days
+- Or upgrade to a paid plan
+
+## Database and Prisma
+
+Working without Prisma might be more convenient in some ways, but I believe
+Prisma's schema has many advantages:
+
+- Easy migration management
+- Better database structure visibility
+
+However, using Prisma with edge functions has some challenges:
+
+- Requires manual handling of **id** creation and **createAt/updateAt**
+  management
+- Currently not possible to make Prisma queries with Supabase Edge functions, so
+  queries must be made using Supabase
+
+### Create Migration
+
+To create a new migration, you should modify the Prisma schema in:
+/prisma/schema.prisma
+
+Once modified, run:
+
+```bash
+npx prisma migrate dev
+```
+
+## Edge Function Imports
+
+Imports in Edge Functions are different from Node.js. There are several ways to
+handle them, with `deno.json` being the recommended approach:
+
+### Using deno.json (Recommended)
+
+Each Edge Function can have its own `deno.json` to manage its imports. This
+method offers several advantages:
+
+- Cleaner and maintainable paths
+- Editor autocompletion
+- Easier refactoring
+- Centralized dependency versions
+
+1. Create `deno.json` in the function folder:
 
 ```json
 {
   "imports": {
     "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.50.1",
-    "@/utils/apikey": "../_shared/utils/apikey.ts"
+    "@/utils/": "../_shared/utils/",
+    "@/types/": "../_shared/types/",
+    "@/constants": "../_shared/constants.ts"
+  },
+  "tasks": {
+    "serve": "supabase functions serve --no-verify-jwt",
+    "deploy": "supabase functions deploy"
   }
 }
 ```
 
-de esta forma en el fichero de la function podemos haccer:
+2. Use imports in your code:
 
-```ts
-import { createClient } from '@supabase/supabase-js';
-import { generateBotKey } from '@/utils/apikey';
+```typescript
+import { createClient } from "@supabase/supabase-js";
+import { generateApiKey } from "@/utils/apikey.ts";
+import { UserType } from "@/types/user.ts";
+import { API_VERSION } from "@/constants";
 ```
 
-Hay que matizar que las keys del json es lo que se usara para importar. El deno.json solo es util para esa fucion
+### Raw Imports (Not Recommended)
 
-Tambien se puede importar haciendo algo similar al un npm i, ej:
+You can also import directly using full paths, but it's not the most
+maintainable way:
 
+```typescript
+import { createClient } from "jsr:@supabase/supabase-js@^2.50.1";
+import { generateBotKey } from "../_shared/utils/apikey.ts";
 ```
-cd supabase/functions/<nombre function>
+
+### Import with deno add
+
+Another option is to use the `deno add` command, which will automatically modify
+the `deno.json`:
+
+```bash
+cd supabase/functions/<function-name>
 deno add jsr:@supabase/supabase-js
 ```
 
-## import_map.json
+### Import Best Practices
 
-Parecido al deno.json pero podria servir para todas las funcionts (no he sido capaz de configurarlo)
+1. **Recommended Folder Structure**:
 
-# Variables de entorno
+```
+supabase/functions/
+├── _shared/          # Shared code between functions
+│   ├── utils/        # Common utilities
+│   ├── types/        # TypeScript types
+├── function1/
+│   ├── deno.json     # Specific configuration
+│   └── index.ts      # Function code
+└── function2/
+    ├── deno.json
+    └── index.ts
+```
 
-en local mirara el .env en la raiz del projecto, en deploy se tendra que ir al projecte > Edge Functions > Secrets
+2. **Versioning**: Always specify the version in external dependencies:
 
-# Crons
+```json
+{
+  "imports": {
+    "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.50.1"
+  }
+}
+```
 
-Muy facil de usar: https://supabase.com/blog/supabase-cron
+3. **Aliases**: Use meaningful aliases to improve readability:
+
+```json
+{
+  "imports": {
+    "@/api/": "./api/",
+    "@/lib/": "./lib/",
+    "@/shared/": "../_shared/"
+  }
+}
+```
+
+## Additional Resources
+
+- [Official Supabase Documentation](https://supabase.com/docs)
+- [Edge Functions Examples](https://github.com/supabase/supabase/tree/master/examples/edge-functions)
+- [Deno Guide](https://deno.land/manual)
